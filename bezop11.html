@@ -1,69 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title></title>
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ElGamal шифрование</title>
 </head>
 <body>
+  <input type="text" id="p" placeholder="Простое число - модуль">
+  <br>
+  <input type="text" id="x" placeholder="Секретный ключ">
+  <br>
+  <input type="text" id="m" placeholder="Открытый текст">
+  <br>
+  <input type="text" id="k" placeholder="Случайное значение">
+  <br>
+  <button onclick="elgamalEncrypt()">Зашифровать</button>
+  <br>
+  <input type="text" id="ciphertext" placeholder="Шифротекст">
+  <br>
+  <button onclick="elgamalDecrypt()">Расшифровать</button>
+  <br>
+  <input type="text" id="plaintext" placeholder="Открытый текст">
 
-<input type="text" id="id1" placeholder="P">
-<br>
-<input type="text" id="id2" placeholder="X">
-<br>
-<input type="text" id="id3" placeholder="M">
-<br>
-<input type="text" id="id4" placeholder="K">
-<br>
-<button onclick="code1()">Зашифровать</button>
-<br>
-<input type="text" id="id5" placeholder="P">
-<br>
-<input type="text" id="id6" placeholder="X">
-<br>
-<input type="text" id="id7" placeholder="A">
-<br>
-<input type="text" id="id8" placeholder="B">
-<br>
-<button onclick="code2()">Расшифровать</button>
-<script type="text/javascript">
-function code1(){
-var p = document.getElementById("id1").value
-var x = document.getElementById("id2").value
-var m = document.getElementById("id3").value
-var k = document.getElementById("id4").value
+  <script type="text/javascript">
+    function elgamalEncrypt() {
+      const p = BigInt(document.getElementById("p").value);
+      const x = BigInt(document.getElementById("x").value);
+      const m = BigInt(document.getElementById("m").value);
+      const k = BigInt(document.getElementById("k").value);
+      if (k < 2n || k > p - 2n) {
+        alert("Значение k должно быть между 2 и p-2");
+        return;
+      }
+      const g = findPrimitiveRoot(p);
+      const y = modPow(g, x, p);
+      const a = modPow(g, k, p);
+      const b = (modPow(y, k, p) * m) % p;
+      document.getElementById("ciphertext").value = `(${a}, ${b})`;
+    }
 
-var g;
-for(i=2;i<p;i++){
-if((i**(p-1))%p==1){
-g = i;
-alert(g);
-break;
-}
-}
+    function elgamalDecrypt() {
+      const p = BigInt(document.getElementById("p").value);
+      const x = BigInt(document.getElementById("x").value);
+      const ciphertext = document.getElementById("ciphertext").value;
+      const regex = /\((\d+),\s(\d+)\)/;
+      const match = ciphertext.match(regex);
+      if (match === null) {
+        alert("Неверный формат шифротекста");
+        return;
+      }
+      const a = BigInt(match[1]);
+      const b = BigInt(match[2]);
+      const y = modPow(a, x, p);
+      const m = (b * modPow(y, p - 1n - x, p)) % p;
+      document.getElementById("plaintext").value = `${m}`;
+    }
 
-var y = (g**x)%p
-alert(y);
-var a = (g**k)%p
-alert(a);
-var b = ((y**k)*m)%p;
-alert(b);
-alert("зашифрованние сообщение:"+a+","+b)
-}
-function code2(){
-var p = document.getElementById("id5").value
-var x = document.getElementById("id6").value
-var a = document.getElementById("id7").value
-var b = document.getElementById("id8").value
+    function modPow(base, exp, mod) {
+      base = base % mod;
+      let result = 1n;
+      while (exp > 0n) {
+        if (exp % 2n === 1n) {
+          result = (result * base) % mod;
+        }
+        base = (base * base) % mod;
+        exp = exp / 2n;
+      }
+      return result;
+    }
 
+    function findPrimitiveRoot(p) {
+      // Поиск первообразного корня по модулю p
+      const primeFactors = factorize(p - 1n);
+      for (let g = 2n; g < p; g++) {
+        let isPrimitiveRoot = true;
+        for (let i = 0; i < primeFactors.length; i++) {
+          if (modPow(g, (p - 1n) / primeFactors[i], p) === 1n) {
+            isPrimitiveRoot = false;
+            break;
+          }
+        }
+        if (isPrimitiveRoot) {
+          return g;
+        }
+      }
+    }
 
-var m = (b * (a**(p-1-x)))%p
-alert("расшифрованное сообщение m:"+m)
-}
+    function factorize(n) {
+      // Факторизация числа n
+      const factors = [];
+      while (n % 2n === 0n) {
+        factors.push(2n);
+        n = n / 2n;
+      }
+      for (let i = 3n; i <= sqrt(n); i = i + 2n) {
+        while (n % i === 0n) {
+          factors.push(i);
+          n = n / i;
+        }
+      }
+      if (n > 2n) {
+        factors.push(n);
+      }
+      return factors;
+    }
 
-
-</script>
+    function sqrt(n) {
+      // Вычисление квадратного корня из n, округленного в меньшую сторону до целого числа
+      let x = n;
+      let y = (x + 1n) / 2n;
+      while (y < x) {
+        x = y;
+        y = (x + n / x) / 2n;
+      }
+      return x;
+    }
+  </script>
 </body>
 </html>
